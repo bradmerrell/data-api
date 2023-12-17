@@ -48,6 +48,22 @@ const swaggerSpec = swaggerJSDoc(options);
 // Serve Swagger
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
+// Middleware to check the API key
+function apiKeyCheck(req, res, next) {
+  const apiKey = process.env.MY_API_KEY;
+  const requestApiKey = req.headers['x-api-key'];
+
+  if (!apiKey || requestApiKey !== apiKey) {
+    res.status(401).send('Unauthorized: Invalid API key');
+    return;
+  }
+
+  next();
+}
+
+// Apply the middleware
+app.use(apiKeyCheck);
+
 /**
  * @swagger
  * /upload:
