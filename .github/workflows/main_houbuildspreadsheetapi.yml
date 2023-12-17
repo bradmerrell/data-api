@@ -58,5 +58,5 @@ jobs:
         with:
           app-name: 'houbuildspreadsheetapi'
           slot-name: 'Production'
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_3401656522BC428BBE40582D88EE57BD }}
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_2B17B7094F354940A188CA0046BFE1C8 }}
           package: .
