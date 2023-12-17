@@ -52,6 +52,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 function apiKeyCheck(req, res, next) {
   const apiKey = process.env.MY_API_KEY;
   const requestApiKey = req.headers['x-api-key'];
+  console.log ("API Key:", apiKey);
+  console.log ("Request API Key:", requestApiKey);
 
   if (!apiKey || requestApiKey !== apiKey) {
     res.status(401).send('Unauthorized: Invalid API key');
