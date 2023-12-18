@@ -4,14 +4,13 @@ const cors = require('cors');
 const XLSX = require('xlsx');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJSDoc = require('swagger-jsdoc');
-
-require('dotenv').config();
 const { BlobServiceClient, ContainerClient } = require('@azure/storage-blob');
+const { DefaultAzureCredential } = require("@azure/identity");
+require('dotenv').config();
 
 const app = express();
 const upload = multer(); // for parsing multipart/form-data
 const port = process.env.PORT || 3000;
-const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
 
 // Enable CORS for client-side
 app.use(cors());
@@ -52,8 +51,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 function apiKeyCheck(req, res, next) {
   const apiKey = process.env.MY_API_KEY;
   const requestApiKey = req.headers['x-api-key'];
-  console.log ("API Key:", apiKey);
-  console.log ("Request API Key:", requestApiKey);
 
   if (!apiKey || requestApiKey !== apiKey) {
     res.status(401).send('Unauthorized: Invalid API key');
@@ -89,11 +86,24 @@ app.post('/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
     return res.status(400).send('No file uploaded.');
     }
+    
+    // Get BlobClient based on local or Azure
+    let blobServiceClient;
+
+    if (process.env.AZURE_STORAGE_CONNECTION_STRING) {
+        // Local development - use connection string
+        blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+    } else {
+        // Azure environment - use Managed Identity
+        const credentials = new DefaultAzureCredential();
+        const accountName = process.env.AZURE_STORAGE_ACCOUNT;
+        const url = `https://${accountName}.blob.core.windows.net`;
+        blobServiceClient = new BlobServiceClient(url, credentials);
+    }    
 
     const containerName = 'data';
     //const blobName = req.file.originalname;
     const blobName = "spreadsheet.xlsx"
-    const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
     const containerClient = blobServiceClient.getContainerClient(containerName);
 
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
@@ -112,11 +122,23 @@ app.post('/upload', upload.single('file'), async (req, res) => {
  *         description: Data retrieved successfully
  */
 app.get('/data', async (req, res) => {
+  let blobServiceClient;
+
+  if (process.env.AZURE_STORAGE_CONNECTION_STRING) {
+      // Local development - use connection string
+      blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+  } else {
+      // Azure environment - use Managed Identity
+      const credentials = new DefaultAzureCredential();
+      const accountName = process.env.AZURE_STORAGE_ACCOUNT;
+      const url = `https://${accountName}.blob.core.windows.net`;
+      blobServiceClient = new BlobServiceClient(url, credentials);
+  }
+
   const sheetName = req.query.tab;
   const blobName = "spreadsheet.xlsx"
-  const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
   const containerName = 'data';
-  const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
+  
   const containerClient = blobServiceClient.getContainerClient(containerName);
   const blobClient = containerClient.getBlobClient(blobName);
 
