@@ -217,6 +217,23 @@ async function streamToBuffer(readableStream) {
   });
 }
 
+/**
+ * @swagger
+ * /healthcheck:
+ *   get:
+ *     summary: returns a success, if working properly
+ *     responses:
+ *       200:
+ *         description: Everything is working properyly
+ */
+app.get('/healthcheck', async (req, res) => {
+  try {     
+    res.status(200).send("Everthing is working okay");
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+});
+
   
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
