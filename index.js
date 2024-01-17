@@ -174,6 +174,50 @@ app.get('/data', async (req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /lastmodified:
+ *   get:
+ *     summary: Get the "Last Modified" date of the file "spreadsheet.xlsx"
+ *     responses:
+ *       200:
+ *         description: Last Modified date returned successfully
+ *       404:
+ *         description: File not found
+ */
+app.get('/lastmodified', async (req, res) => {
+  let blobServiceClient;
+
+  if (process.env.AZURE_STORAGE_CONNECTION_STRING) {
+      // Local development - use connection string
+      blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+  } else {
+      // Azure environment - use Managed Identity
+      const credentials = new DefaultAzureCredential();
+      const accountName = process.env.AZURE_STORAGE_ACCOUNT;
+      const url = `https://${accountName}.blob.core.windows.net`;
+      blobServiceClient = new BlobServiceClient(url, credentials);
+  }
+
+  const containerName = 'data';
+  const blobName = "spreadsheet.xlsx";
+  const containerClient = blobServiceClient.getContainerClient(containerName);
+  const blobClient = containerClient.getBlobClient(blobName);
+
+  try {
+      const properties = await blobClient.getProperties();
+      const lastModified = properties.lastModified;
+      res.status(200).send({ lastModified: lastModified.toISOString() });
+  } catch (error) {
+      if (error.statusCode === 404) {
+          res.status(404).send('File not found');
+      } else {
+          res.status(500).send(error.message);
+      }
+  }
+});
+
+
 // Function to filter data based on query parameters
 function filterData(data, queryParams) {
     return data.filter(row => {
