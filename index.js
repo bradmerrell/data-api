@@ -234,16 +234,31 @@ function filterData(data, queryParams) {
 function transformData(spreadsheetData) {
     return spreadsheetData.map(row => {
         // Remove "Ext. at " from "Primary Opp" and split it   
-        var client = '';             
-        var project = '';
+        var next_client_project = '';
+        var next_client = '';             
+        var next_project = '';
         if (row['Primary Opp'])
         {
-            const primaryOpp = (row['Primary Opp'] || '').replace(/^Ext\. at /, '');
-            const segments = primaryOpp.split(' - ');
+            next_client_project = (row['Primary Opp'] || '').replace(/^Ext\. at /, '');
+            const segments = next_client_project.split(' - ');
             if (segments.length >= 2)
             {
-                client = segments[0];
-                project = segments[1];
+              next_client = segments[0];
+              next_project = segments[1];
+            }
+        }
+
+        var current_client = '';             
+        var current_project = '';
+        var current_client_project = '';
+        if (row['Current Eng.'])
+        {
+            current_client_project = (row['Current Eng.'] || '').replace(/^Ext\. at /, '');
+            const segments = current_client_project.split(' - ');
+            if (segments.length >= 2)
+            {
+              current_client = segments[0];
+              current_project = segments[1];
             }
         }
 
@@ -261,11 +276,28 @@ function transformData(spreadsheetData) {
             row['Primary Owner'] = ownerFirstName ? `${ownerFirstName} ${ownerLastName}` : '';
         }
 
+        // Convert "Current Owner" format
+        if (row['Current Owner'])
+        {                
+            const [ownerLastName, ownerFirstName] = (row['Current Owner'] || '').split(', ');                
+            row['Current Owner'] = ownerFirstName ? `${ownerFirstName} ${ownerLastName}` : '';
+        }
+
+        // Convert "Manager" format
+        if (row['Manager'])
+        {                
+            const [ownerLastName, ownerFirstName] = (row['Manager'] || '').split(', ');                
+            row['Manager'] = ownerFirstName ? `${ownerFirstName} ${ownerLastName}` : '';
+        }
         
         return {
             ...row,
-            'Client': client,
-            'Project': project
+            'ClientProject': current_client_project,
+            'Client': current_client,
+            'Project': current_project,
+            'NextClientOpp': next_client_project,
+            'NextClient': next_client,
+            'NextProject': next_project  
         };
     });
 }
